@@ -79,6 +79,9 @@ using namespace time_literals;
 #error "battery_status module requires power bricks"
 #endif
 
+constexpr uint32_t BATTERY_STATUS_SAMPLE_FREQUENCY_HZ = 100; /**< 100Hz */
+constexpr uint32_t BATTERY_STATUS_SAMPLE_INTERVAL_US  = 1_s / BATTERY_STATUS_SAMPLE_FREQUENCY_HZ;
+
 class BatteryStatus : public ModuleBase<BatteryStatus>, public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
@@ -135,9 +138,9 @@ private:
 BatteryStatus::BatteryStatus() :
 	ModuleParams(nullptr),
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::hp_default),
-	_battery1(1, this),
+	_battery1(1, this, BATTERY_STATUS_SAMPLE_INTERVAL_US),
 #if BOARD_NUMBER_BRICKS > 1
-	_battery2(2, this),
+	_battery2(2, this, BATTERY_STATUS_SAMPLE_INTERVAL_US),
 #endif
 	_loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME))
 {
@@ -284,7 +287,7 @@ BatteryStatus::task_spawn(int argc, char *argv[])
 bool
 BatteryStatus::init()
 {
-	ScheduleOnInterval(10_ms); // 100 Hz
+	ScheduleOnInterval(BATTERY_STATUS_SAMPLE_INTERVAL_US);
 
 	return true;
 }
